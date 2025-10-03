@@ -20,7 +20,6 @@ const { data, isPending, isError, error, refetch } = useGetRequest<User[]>(
 ```typescript
 import { useRequest } from "./composables";
 
-// With custom options
 const { data, isPending, isError, error, refetch } = useRequest<User[]>({
   queryKey: ["users", userId.value],
   queryFn: async () => {
@@ -69,7 +68,7 @@ const {
   invalidateQueries: [["users"]], // Invalidate cache
 });
 
-// PUT request
+// PUT request(Method)
 const { mutate: updateUser } = usePutRequest<User, UpdateUserData>(
   "https://api.example.com/users",
   {
@@ -79,7 +78,7 @@ const { mutate: updateUser } = usePutRequest<User, UpdateUserData>(
   }
 );
 
-// DELETE request
+// DELETE request(method)
 const { mutate: deleteUser } = useDeleteRequest<void, { id: number }>(
   "https://api.example.com/users",
   {
@@ -189,7 +188,7 @@ const handleSubmit = () => {
   createUser(formData.value)
 }
 
-// Template
+// Template(UI)
 <form @submit.prevent="handleSubmit">
   <input v-model="formData.name" placeholder="Name" />
   <input v-model="formData.email" placeholder="Email" />
@@ -247,7 +246,7 @@ const { mutate: updateUser } = usePutRequest<User, UpdateUserData>(
   "/api/users",
   {
     onSuccess: (data, variables) => {
-      // Update cache
+      // Update cache(QUERY)
       queryClient.setQueryData(["user", variables.id], data);
     },
     invalidateQueries: [["users"]],
