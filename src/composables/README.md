@@ -1,219 +1,200 @@
-# Request Composables
+Request Composables
 
-Bu modül, Vue uygulamanızda HTTP istekleri için yeniden kullanılabilir composable'lar sağlar.
+This module provides reusable composables for handling HTTP requests in your Vue application.
 
-## useRequest (GET İstekleri)
-
-### Temel Kullanım
-
-```typescript
+useRequest (GET Requests)
+Basic Usage
 import { useGetRequest } from "./composables";
 
-// Basit GET isteği
+// Simple GET request
 const { data, isPending, isError, error, refetch } = useGetRequest<User[]>(
-  "https://api.example.com/users"
+"https://api.example.com/users"
 );
-```
 
-### Gelişmiş Kullanım
-
-```typescript
+Advanced Usage
 import { useRequest } from "./composables";
 
-// Özelleştirilmiş seçeneklerle
+// With custom options
 const { data, isPending, isError, error, refetch } = useRequest<User[]>({
-  queryKey: ["users", userId.value],
-  queryFn: async () => {
-    const response = await fetch(
-      `https://api.example.com/users/${userId.value}`
-    );
-    if (!response.ok) throw new Error("Failed to fetch users");
-    return response.json();
-  },
-  enabled: computed(() => !!userId.value), // Sadece userId varsa çalışır
-  staleTime: 5 * 60 * 1000, // 5 dakika
-  retry: 3,
+queryKey: ["users", userId.value],
+queryFn: async () => {
+const response = await fetch(
+`https://api.example.com/users/${userId.value}`
+);
+if (!response.ok) throw new Error("Failed to fetch users");
+return response.json();
+},
+enabled: computed(() => !!userId.value), // Only runs if userId exists
+staleTime: 5 _ 60 _ 1000, // 5 minutes
+retry: 3,
 });
-```
 
-### useRequest Seçenekleri
+useRequest Options
 
-- `queryKey`: Cache key (zorunlu)
-- `queryFn`: İstek fonksiyonu (zorunlu)
-- `enabled`: İsteğin aktif olup olmadığı (opsiyonel)
-- `staleTime`: Verinin ne kadar süre taze kalacağı (varsayılan: 5 dakika)
-- `cacheTime`: Cache'de ne kadar kalacağı (varsayılan: 10 dakika)
-- `refetchOnWindowFocus`: Pencere odaklandığında yeniden yükle (varsayılan: false)
-- `retry`: Hata durumunda kaç kez deneyeceği (varsayılan: 3)
+queryKey: Cache key (required)
 
-## useRequestMutation (POST/PUT/DELETE İstekleri)
+queryFn: Request function (required)
 
-### Temel Kullanım
+enabled: Whether the request is active (optional)
 
-```typescript
+staleTime: How long the data remains fresh (default: 5 minutes)
+
+cacheTime: How long the data stays in cache (default: 10 minutes)
+
+refetchOnWindowFocus: Refetch when window gains focus (default: false)
+
+retry: Number of retries on failure (default: 3)
+
+useRequestMutation (POST/PUT/DELETE Requests)
+Basic Usage
 import { usePostRequest, usePutRequest, useDeleteRequest } from "./composables";
 
-// POST isteği
+// POST request
 const {
-  mutate: createUser,
-  isPending,
-  isError,
-  error,
+mutate: createUser,
+isPending,
+isError,
+error,
 } = usePostRequest<User, CreateUserData>("https://api.example.com/users", {
-  onSuccess: (data) => {
-    console.log("User created:", data);
-  },
-  onError: (error) => {
-    console.error("Failed to create user:", error);
-  },
-  invalidateQueries: [["users"]], // Cache'i temizle
+onSuccess: (data) => {
+console.log("User created:", data);
+},
+onError: (error) => {
+console.error("Failed to create user:", error);
+},
+invalidateQueries: [["users"]], // Invalidate cache
 });
 
-// PUT isteği
+// PUT request
 const { mutate: updateUser } = usePutRequest<User, UpdateUserData>(
-  "https://api.example.com/users",
-  {
-    onSuccess: () => {
-      console.log("User updated");
-    },
-  }
+"https://api.example.com/users",
+{
+onSuccess: () => {
+console.log("User updated");
+},
+}
 );
 
-// DELETE isteği
+// DELETE request
 const { mutate: deleteUser } = useDeleteRequest<void, { id: number }>(
-  "https://api.example.com/users",
-  {
-    onSuccess: () => {
-      console.log("User deleted");
-    },
-  }
+"https://api.example.com/users",
+{
+onSuccess: () => {
+console.log("User deleted");
+},
+}
 );
-```
 
-### Gelişmiş Kullanım
-
-```typescript
+Advanced Usage
 import { useRequestMutation } from "./composables";
 
 const { mutate, mutateAsync, isPending, isError, error, reset } =
-  useRequestMutation<Response, FormData>({
-    mutationFn: async (formData) => {
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      if (!response.ok) throw new Error("Upload failed");
-      return response.json();
-    },
-    onSuccess: (data, variables) => {
-      console.log("Upload successful:", data);
-    },
-    onError: (error, variables) => {
-      console.error("Upload failed:", error);
-    },
-    invalidateQueries: [["files"], ["uploads"]],
-  });
-```
+useRequestMutation<Response, FormData>({
+mutationFn: async (formData) => {
+const response = await fetch("/api/upload", {
+method: "POST",
+body: formData,
+});
+if (!response.ok) throw new Error("Upload failed");
+return response.json();
+},
+onSuccess: (data, variables) => {
+console.log("Upload successful:", data);
+},
+onError: (error, variables) => {
+console.error("Upload failed:", error);
+},
+invalidateQueries: [["files"], ["uploads"]],
+});
 
-### Mutation Seçenekleri
+Mutation Options
 
-- `mutationFn`: Mutation fonksiyonu (zorunlu)
-- `onSuccess`: Başarılı olduğunda çalışacak fonksiyon (opsiyonel)
-- `onError`: Hata durumunda çalışacak fonksiyon (opsiyonel)
-- `invalidateQueries`: Başarılı olduğunda temizlenecek cache key'leri (opsiyonel)
+mutationFn: Mutation function (required)
 
-## Dönüş Değerleri
+onSuccess: Callback when successful (optional)
 
-### useRequest / useGetRequest
+onError: Callback on error (optional)
 
-```typescript
+invalidateQueries: Cache keys to invalidate on success (optional)
+
+Return Values
+useRequest / useGetRequest
 {
-  data: Ref<T | undefined>,      // API'den dönen veri
-  error: Ref<Error | null>,      // Hata objesi
-  isPending: Ref<boolean>,       // İlk yükleme durumu
-  isFetching: Ref<boolean>,      // Yeniden yükleme durumu
-  isError: Ref<boolean>,         // Hata durumu
-  isSuccess: Ref<boolean>,       // Başarılı durum
-  refetch: () => void           // Manuel yeniden yükleme
+data: Ref<T | undefined>, // Response data
+error: Ref<Error | null>, // Error object
+isPending: Ref<boolean>, // Initial loading state
+isFetching: Ref<boolean>, // Refetching state
+isError: Ref<boolean>, // Error state
+isSuccess: Ref<boolean>, // Success state
+refetch: () => void // Manually trigger refetch
 }
-```
 
-### useRequestMutation
-
-```typescript
+useRequestMutation
 {
-  mutate: (variables: TVariables) => void,                    // Fire-and-forget mutation
-  mutateAsync: (variables: TVariables) => Promise<TData>,    // Async mutation
-  data: Ref<TData | undefined>,                              // Response data
-  error: Ref<Error | null>,                                  // Error object
-  isPending: Ref<boolean>,                                   // Loading state
-  isError: Ref<boolean>,                                     // Error state
-  isSuccess: Ref<boolean>,                                   // Success state
-  reset: () => void                                         // Reset mutation state
+mutate: (variables: TVariables) => void, // Fire-and-forget mutation
+mutateAsync: (variables: TVariables) => Promise<TData>, // Async mutation
+data: Ref<TData | undefined>, // Response data
+error: Ref<Error | null>, // Error object
+isPending: Ref<boolean>, // Loading state
+isError: Ref<boolean>, // Error state
+isSuccess: Ref<boolean>, // Success state
+reset: () => void // Reset mutation state
 }
-```
 
-## Örnek Kullanım Senaryoları
+Example Use Cases
 
-### 1. Kullanıcı Listesi
+1. User List
+   // Inside a component
+   const { data: users, isPending, isError, error } = useGetRequest<User[]>('/api/users')
 
-```typescript
-// Component içinde
-const { data: users, isPending, isError, error } = useGetRequest<User[]>('/api/users')
+// Template
 
-// Template'de
-<div v-if="isPending">Yükleniyor...</div>
-<div v-if="isError">Hata: {{ error.message }}</div>
+<div v-if="isPending">Loading...</div>
+<div v-if="isError">Error: {{ error.message }}</div>
 <div v-if="users">
   <div v-for="user in users" :key="user.id">
     {{ user.name }}
   </div>
 </div>
-```
 
-### 2. Form Gönderimi
-
-```typescript
-// Component içinde
-const formData = ref({ name: '', email: '' })
+2. Form Submission
+   // Inside a component
+   const formData = ref({ name: '', email: '' })
 
 const { mutate: createUser, isPending, isSuccess } = usePostRequest<User, CreateUserData>(
-  '/api/users',
-  {
-    onSuccess: () => {
-      formData.value = { name: '', email: '' }
-      alert('Kullanıcı oluşturuldu!')
-    }
-  }
+'/api/users',
+{
+onSuccess: () => {
+formData.value = { name: '', email: '' }
+alert('User created!')
+}
+}
 )
 
 const handleSubmit = () => {
-  createUser(formData.value)
+createUser(formData.value)
 }
 
-// Template'de
+// Template
+
 <form @submit.prevent="handleSubmit">
-  <input v-model="formData.name" placeholder="İsim" />
+  <input v-model="formData.name" placeholder="Name" />
   <input v-model="formData.email" placeholder="Email" />
   <button type="submit" :disabled="isPending">
-    {{ isPending ? 'Gönderiliyor...' : 'Gönder' }}
+    {{ isPending ? 'Submitting...' : 'Submit' }}
   </button>
 </form>
-```
 
-### 3. Koşullu İstekler
-
-```typescript
-const userId = ref<number | null>(null);
+3. Conditional Requests
+   const userId = ref<number | null>(null);
 
 const { data: user } = useRequest<User>({
-  queryKey: ["user", userId],
-  queryFn: async () => {
-    const response = await fetch(`/api/users/${userId.value}`);
-    return response.json();
-  },
-  enabled: computed(() => !!userId.value), // Sadece userId varsa çalışır
+queryKey: ["user", userId],
+queryFn: async () => {
+const response = await fetch(`/api/users/${userId.value}`);
+return response.json();
+},
+enabled: computed(() => !!userId.value), // Only runs if userId exists
 });
-```
 
-Bu composable'lar, uygulamanızın her yerinde tutarlı ve yeniden kullanılabilir HTTP istekleri yapmanızı sağlar.
+👉 These composables provide a consistent and reusable way to handle HTTP requests across your application.
